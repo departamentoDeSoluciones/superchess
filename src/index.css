@@ -1,0 +1,358 @@
+/* =========================
+   FONTS
+   ========================= */
+
+/* Si usas Google Fonts */
+@import url("https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@400;500;600;700&family=Platypi:wght@500;600;700&display=swap");
+
+/* =========================
+   DESIGN TOKENS
+   ========================= */
+
+:root {
+  /* Palette */
+  --color-blue: #a7c5c5;
+  --color-bone: #dee0d5;
+  --color-gold: #e2ac48;
+  --color-clay: #b96028;
+  --color-rust: #983c2d;
+
+  /* Semantic colors */
+  --bg: var(--color-bone);
+  --surface: #f6f5ed;
+  --surface-muted: var(--color-blue);
+
+  --text: #1f1f1f;
+  --text-muted: #5f5f58;
+  --text-inverse: #fffaf0;
+
+  --primary: var(--color-rust);
+  --primary-hover: var(--color-clay);
+  --accent: var(--color-gold);
+  --border: rgba(31, 31, 31, 0.16);
+
+  /* Fonts */
+  --font-display: "Platypi", Georgia, serif;
+  --font-body: "Kumbh Sans", system-ui, sans-serif;
+
+  /* 16px step scale */
+  --step-0: 0;
+  --step-1: 16px;
+  --step-2: 32px;
+  --step-3: 48px;
+  --step-4: 64px;
+  --step-5: 80px;
+  --step-6: 96px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 32px;
+
+  /* Layout */
+  --container: 1120px;
+
+  /* Effects */
+  --shadow-soft: 0 16px 40px rgba(31, 31, 31, 0.08);
+  --transition: 180ms ease;
+}
+
+/* =========================
+   RESET BASE
+   ========================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+  display: block;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* =========================
+   TYPOGRAPHY
+   ========================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 var(--step-1);
+  font-family: var(--font-display);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--primary);
+}
+
+h1 {
+  font-size: clamp(48px, 8vw, 96px);
+}
+
+h2 {
+  font-size: clamp(32px, 6vw, 64px);
+}
+
+h3 {
+  font-size: clamp(32px, 4vw, 48px);
+}
+
+h4 {
+  font-size: 32px;
+}
+
+h5,
+h6 {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+p {
+  margin: 0 0 var(--step-1);
+  max-width: 68ch;
+}
+
+small {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+strong {
+  font-weight: 700;
+}
+
+a {
+  color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  transition: color var(--transition);
+}
+
+a:hover {
+  color: var(--primary-hover);
+}
+
+/* =========================
+   LAYOUT
+   ========================= */
+
+.container {
+  width: min(100% - var(--step-2), var(--container));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: var(--step-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--step-1);
+}
+
+.grid {
+  display: grid;
+  gap: var(--step-2);
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* =========================
+   UI ELEMENTS
+   ========================= */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--step-2);
+  box-shadow: var(--shadow-soft);
+}
+
+.card-muted {
+  background: var(--surface-muted);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: var(--step-2);
+  padding: 0 var(--step-1);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* =========================
+   BUTTONS
+   ========================= */
+
+.button,
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--step-3);
+  padding: 0 var(--step-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--text-inverse);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background var(--transition),
+    transform var(--transition);
+}
+
+.button:hover,
+button:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.button-secondary {
+  background: var(--accent);
+  color: var(--text);
+}
+
+.button-secondary:hover {
+  background: var(--color-clay);
+  color: var(--text-inverse);
+}
+
+/* =========================
+   FORMS
+   ========================= */
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+input,
+textarea,
+select {
+  width: 100%;
+  min-height: var(--step-3);
+  padding: 0 var(--step-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+}
+
+textarea {
+  min-height: var(--step-6);
+  padding-block: var(--step-1);
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* =========================
+   HERO / PAGE BLOCKS
+   ========================= */
+
+.hero {
+  padding-block: var(--step-5);
+}
+
+.hero-title {
+  max-width: 10ch;
+}
+
+.hero-copy {
+  font-size: 32px;
+  line-height: 1.25;
+  color: var(--text-muted);
+}
+
+.panel-primary {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.panel-primary h1,
+.panel-primary h2,
+.panel-primary h3 {
+  color: var(--text-inverse);
+}
+
+.panel-accent {
+  background: var(--accent);
+  color: var(--text);
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 760px) {
+  :root {
+    --step-2: 24px;
+    --step-3: 40px;
+    --step-4: 48px;
+    --step-5: 64px;
+  }
+
+  .grid-2,
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    font-size: 24px;
+  }
+
+  .card {
+    padding: var(--step-1);
+  }
+}

@@ -1,0 +1,90 @@
+
+.board-main {
+  display: flex;
+  flex-wrap: wrap;
+
+  width: min(80vw, 80vh);
+  aspect-ratio: 1;
+}
+
+.casilla {
+  width: calc(100% / 8);
+  aspect-ratio: 1;
+
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 85%;
+}
+
+
+/* BOARD */
+
+.casilla.blanca {
+  background-color: var(--color-bone);
+}
+
+.casilla.negra {
+  background-color: var(--color-clay);
+}
+
+
+/* WHITE */
+
+.piece-p.white {
+  background-image: url("../assets/pieces/cburnett/wP.svg");
+}
+
+.piece-n.white {
+  background-image: url("../assets/pieces/cburnett/wN.svg");
+}
+
+.piece-b.white {
+  background-image: url("../assets/pieces/cburnett/wB.svg");
+}
+
+.piece-r.white {
+  background-image: url("../assets/pieces/cburnett/wR.svg");
+}
+
+.piece-q.white {
+  background-image: url("../assets/pieces/cburnett/wQ.svg");
+}
+
+.piece-k.white {
+  background-image: url("../assets/pieces/cburnett/wK.svg");
+}
+
+
+/* BLACK */
+
+.piece-p.black {
+  background-image: url("../assets/pieces/cburnett/bP.svg");
+}
+
+.piece-n.black {
+  background-image: url("../assets/pieces/cburnett/bN.svg");
+}
+
+.piece-b.black {
+  background-image: url("../assets/pieces/cburnett/bB.svg");
+}
+
+.piece-r.black {
+  background-image: url("../assets/pieces/cburnett/bR.svg");
+}
+
+.piece-q.black {
+  background-image: url("../assets/pieces/cburnett/bQ.svg");
+}
+
+.piece-k.black {
+  background-image: url("../assets/pieces/cburnett/bK.svg");
+}
+.casilla.selected {
+  outline: 2px solid red;
+  outline-offset: -2px;
+}
+.casilla.trajectory {
+  outline: 4px dashed red;
+  outline-offset: -4px;
+}
