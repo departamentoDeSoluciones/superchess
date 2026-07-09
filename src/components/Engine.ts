@@ -1,3 +1,4 @@
+import { logger } from "../engine/core/Logger";
 export class Cell {
   letra: string;
   numero: number;
@@ -29,9 +30,6 @@ export class Pieza {
     this.color = C;
     this.tipo = P;
   }
-
-
-
 
   calcularTrayectoria(board: Board): Cell[] {
     const origin = board.playground.find(
@@ -216,6 +214,7 @@ export class Pieza {
 export class Board {
   playground: Cell[];
   esTurnoNegro: boolean = false;
+  isGameOver: boolean = false;
   constructor() {
     this.playground = [];
     for (let y = 8; y >= 1; y--) {
@@ -229,23 +228,151 @@ export class Board {
       }
     }
   }
+
+  isCheck(color: boolean = this.esTurnoNegro): boolean {
+    const kingCell = this.playground.find(
+      (cell) =>
+        cell.pieza?.tipo === "k" &&
+        cell.pieza.color === color
+    );
+
+    if (!kingCell) return false;
+
+    const enemyPieces = this.playground.filter(
+      (cell) =>
+        cell.pieza &&
+        cell.pieza.color !== color
+    );
+
+    return enemyPieces.some((cell) => {
+      if (!cell.pieza) return false;
+
+      const trayectoria =
+        cell.pieza.calcularTrayectoria(this);
+
+      return trayectoria.includes(kingCell);
+    });
+
+
+  }
+
+  isLegalMove(
+    pieza: Pieza,
+    destination: Cell
+  ): boolean {
+    const origin = this.playground.find(
+      (cell) => cell.pieza === pieza
+    );
+
+    if (!origin) return false;
+
+    const capturedPiece = destination.pieza;
+
+    destination.pieza = pieza;
+    origin.pieza = null;
+
+    const kingIsStillInCheck =
+      this.isCheck(pieza.color);
+
+    origin.pieza = pieza;
+    destination.pieza = capturedPiece;
+
+    return !kingIsStillInCheck;
+  }
   movePiece(origin: Cell, destination: Cell): boolean {
+    if (this.isGameOver) {
+      return false;
+    }
     if (!origin.pieza) return false;
 
     // El condicional de reglas irá aquí.
     if (origin.pieza.color !== this.esTurnoNegro) return false;
-    const validMoves = origin.pieza.calcularTrayectoria(this);
+    const movingPiece = origin.pieza;
+    if (movingPiece.color !== this.esTurnoNegro) {
+      return false;
+    }
+
+    const validMoves = movingPiece.calcularTrayectoria(this);
     const isMoveLegal = validMoves.includes(destination);
     if (!isMoveLegal) {
       return false;
     }
-    // Ejecución unificada de movimiento/captura
 
-    destination.pieza = origin.pieza;
+    // Ejecución unificada de movimiento/captura
+    const capturedPiece = destination.pieza;
+
+    destination.pieza = movingPiece;
     origin.pieza = null;
 
+    const leavesKingInCheck = this.isCheck(movingPiece.color);
+    if (leavesKingInCheck) {
+      origin.pieza = movingPiece;
+      destination.pieza = capturedPiece;
+      return false;
+    }
+
     this.esTurnoNegro = !this.esTurnoNegro;
+    this.checkGameOver();
     return true; // Movimiento exitoso
+  }
+
+  hasLegalMoves(color: boolean): boolean {
+    return this.playground.some((cell) => {
+      const pieza = cell.pieza;
+
+      if (!pieza) return false;
+      if (pieza.color !== color) return false;
+
+      const trayectoria =
+        pieza.calcularTrayectoria(this);
+
+      return trayectoria.some((destination) =>
+        this.isLegalMove(
+          pieza,
+          destination
+        )
+      );
+    });
+  }
+
+  isMate(color: boolean): boolean {
+    return (
+      this.isCheck(color) &&
+      !this.hasLegalMoves(color)
+    );
+  }
+
+  isStalemate(color: boolean): boolean {
+    return (
+      !this.isCheck(color) &&
+      !this.hasLegalMoves(color)
+    );
+  }
+
+  checkGameOver(): void {
+    const currentColor =
+      this.esTurnoNegro;
+
+    if (this.isMate(currentColor)) {
+      this.isGameOver = true;
+
+      const color =
+        !currentColor ? "negras" : "blancas";
+
+      logger.log(
+        `Jaque mate. ${color} Ganan.`
+      );
+
+      return;
+    }
+
+    if (this.isStalemate(currentColor)) {
+      this.isGameOver = true;
+
+      logger.log(
+        "Tablas por ahogado."
+      );
+    }
   }
 
   loadPosition(position: string) {

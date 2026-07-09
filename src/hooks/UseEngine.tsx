@@ -67,11 +67,16 @@ export const UseEngine = () => {
     pieza.isSelected = true;
 
     const trayectoria =
-      pieza.calcularTrayectoria(board);
+      pieza
+        .calcularTrayectoria(board)
+        .filter((cell) =>
+          board.isLegalMove(pieza, cell)
+        );
+
     trayectoria.forEach((cell) => {
       cell.isTrajectory = true;
-
     });
+
     setSelectedPiece(pieza);
     updateBoard();
   };
