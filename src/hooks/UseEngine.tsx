@@ -75,17 +75,20 @@ export const UseEngine = () => {
     setSelectedPiece(pieza);
     updateBoard();
   };
+
+
+
   const moveSelectedPiece = (destination: Cell) => {
     if (!selectedPiece) return;
 
     if (destination.pieza === selectedPiece) return;
 
-    // TAKE
-    if (destination.pieza) {
-      selectedPiece.take(
-        destination.pieza,
-        board
-      );
+    const origin = board.playground.find((cell) => cell.pieza === selectedPiece);
+    if (!origin) return;
+
+    const success = board.movePiece(origin, destination)
+
+    if (success) {
 
       logMove(
         selectedPiece,
@@ -97,36 +100,13 @@ export const UseEngine = () => {
       setSelectedPiece(null);
 
       updateBoard();
-
-      return;
     }
-
-    // MOVE
-    const origin = board.playground.find(
-      (cell) => cell.pieza === selectedPiece
-    );
-
-    if (!origin) return;
-
-    destination.pieza = selectedPiece;
-    origin.pieza = null;
-
-    logMove(
-      selectedPiece,
-      destination
-    );
-
-    clearTrajectory();
-    selectedPiece.isSelected = false;
-    setSelectedPiece(null);
-
-    updateBoard();
-
   };
 
   const handleCellClick = (cell: Cell) => {
     if (!selectedPiece) {
       if (!cell.pieza) return;
+      if (cell.pieza.color !== board.esTurnoNegro) return;
       selectPiece(cell.pieza);
       return;
     }

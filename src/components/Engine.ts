@@ -30,20 +30,9 @@ export class Pieza {
     this.tipo = P;
   }
 
-  take(target: Pieza, board: Board): void {
-    const origin = board.playground.find(
-      (cell) => cell.pieza === this
-    );
 
-    const destination = board.playground.find(
-      (cell) => cell.pieza === target
-    );
 
-    if (!origin || !destination) return;
 
-    destination.pieza = this;
-    origin.pieza = null;
-  }
   calcularTrayectoria(board: Board): Cell[] {
     const origin = board.playground.find(
       (cell) => cell.pieza === this
@@ -83,7 +72,13 @@ export class Pieza {
       );
 
       if (!cell) return;
-      if (cell.isOccupied) return;
+      if (cell.isOccupied) {
+        if (cell.pieza?.color !== this.color) {
+          trayectoria.push(cell); // Es enemigo, se puede tomar
+        }
+        return; // Fin del salto, no se añade ni se avanza si es aliado
+
+      };
 
       trayectoria.push(cell);
     };
@@ -99,7 +94,12 @@ export class Pieza {
         );
 
         if (!cell) break;
-        if (cell.isOccupied) break;
+        if (cell.isOccupied) {
+          if (cell.pieza?.color !== this.color) {
+            trayectoria.push(cell); // Es enemigo, se incluye en la trayectoria como destino final
+          }
+          break;
+        }
 
         trayectoria.push(cell);
       }
@@ -107,16 +107,32 @@ export class Pieza {
 
     switch (this.tipo) {
       case "p": {
-        const direction =
-          this.color ? -1 : 1;
+        const direction = this.color ? -1 : 1;
+        const initialRank = this.color ? 7 : 2;
 
-        const initialRank =
-          this.color ? 7 : 2;
+        // Avance recto (solo si la celda está vacía)
+        const forwardCell = findCell(0, direction);
+        if (forwardCell && !forwardCell.isOccupied) {
+          trayectoria.push(forwardCell);
 
-        addCell(0, direction);
+          // Doble avance (solo si la primera y la segunda están vacías)
+          if (origin.numero === initialRank) {
+            const doubleForward = findCell(0, direction * 2);
+            if (doubleForward && !doubleForward.isOccupied) {
+              trayectoria.push(doubleForward);
+            }
+          }
+        }
 
-        if (origin.numero === initialRank) {
-          addCell(0, direction * 2);
+        // Capturas en diagonal (solo si hay enemigo)
+        const captureLeft = findCell(-1, direction);
+        if (captureLeft?.isOccupied && captureLeft.pieza?.color !== this.color) {
+          trayectoria.push(captureLeft);
+        }
+
+        const captureRight = findCell(1, direction);
+        if (captureRight?.isOccupied && captureRight.pieza?.color !== this.color) {
+          trayectoria.push(captureRight);
         }
 
         break;
@@ -199,6 +215,7 @@ export class Pieza {
 
 export class Board {
   playground: Cell[];
+  esTurnoNegro: boolean = false;
   constructor() {
     this.playground = [];
     for (let y = 8; y >= 1; y--) {
@@ -212,6 +229,25 @@ export class Board {
       }
     }
   }
+  movePiece(origin: Cell, destination: Cell): boolean {
+    if (!origin.pieza) return false;
+
+    // El condicional de reglas irá aquí.
+    if (origin.pieza.color !== this.esTurnoNegro) return false;
+    const validMoves = origin.pieza.calcularTrayectoria(this);
+    const isMoveLegal = validMoves.includes(destination);
+    if (!isMoveLegal) {
+      return false;
+    }
+    // Ejecución unificada de movimiento/captura
+
+    destination.pieza = origin.pieza;
+    origin.pieza = null;
+
+    this.esTurnoNegro = !this.esTurnoNegro;
+    return true; // Movimiento exitoso
+  }
+
   loadPosition(position: string) {
     const placement = position.split(" ")[0];
     let cellIndex = 0;
