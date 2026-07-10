@@ -23,6 +23,7 @@ export class Pieza {
   color: boolean;
   tipo: Piece;
   isSelected: boolean = false;
+  hasMoved: boolean = false;
   constructor(
     C: boolean,
     P: Piece
@@ -30,7 +31,22 @@ export class Pieza {
     this.color = C;
     this.tipo = P;
   }
+  coronar(cell: Cell): void {
+    if (this.tipo !== "p") {
+      return;
+    }
 
+    const ultimaLinea =
+      this.color
+        ? cell.numero === 1
+        : cell.numero === 8;
+
+    if (!ultimaLinea) {
+      return;
+    }
+
+    this.tipo = "q";
+  }
   calcularTrayectoria(board: Board): Cell[] {
     const origin = board.playground.find(
       (cell) => cell.pieza === this
@@ -123,15 +139,44 @@ export class Pieza {
         }
 
         // Capturas en diagonal (solo si hay enemigo)
-        const captureLeft = findCell(-1, direction);
-        if (captureLeft?.isOccupied && captureLeft.pieza?.color !== this.color) {
-          trayectoria.push(captureLeft);
-        }
+        const addPawnCapture = (
+          letraOffset: number
+        ) => {
+          const captureCell = findCell(
+            letraOffset,
+            direction
+          );
 
-        const captureRight = findCell(1, direction);
-        if (captureRight?.isOccupied && captureRight.pieza?.color !== this.color) {
-          trayectoria.push(captureRight);
-        }
+          if (!captureCell) return;
+
+          if (
+            captureCell.isOccupied &&
+            captureCell.pieza?.color !== this.color
+          ) {
+            trayectoria.push(captureCell);
+            return;
+          }
+
+          if (
+            !captureCell.isOccupied &&
+            board.enPassantTarget === captureCell
+          ) {
+            const adjacentPawnCell = findCell(
+              letraOffset,
+              0
+            );
+
+            if (
+              adjacentPawnCell?.pieza?.tipo === "p" &&
+              adjacentPawnCell.pieza.color !== this.color
+            ) {
+              trayectoria.push(captureCell);
+            }
+          }
+        };
+
+        addPawnCapture(-1);
+        addPawnCapture(1);
 
         break;
       }
@@ -211,10 +256,27 @@ export class Pieza {
   }
 }
 
+
+type BoardSnapshot = {
+  pieces: Array<{
+    color: boolean;
+    tipo: Piece;
+
+    hasMoved: boolean;
+  } | null>;
+
+  esTurnoNegro: boolean;
+  isGameOver: boolean;
+  enPassantTargetIndex: number | null;
+};
+
 export class Board {
   playground: Cell[];
   esTurnoNegro: boolean = false;
   isGameOver: boolean = false;
+  public history: BoardSnapshot[] = [];
+  enPassantTarget: Cell | null = null;
+
   constructor() {
     this.playground = [];
     for (let y = 8; y >= 1; y--) {
@@ -227,6 +289,103 @@ export class Board {
         );
       }
     }
+  }
+  private createSnapshot(): BoardSnapshot {
+    return {
+      pieces: this.playground.map((cell) => {
+        if (!cell.pieza) return null;
+
+        return {
+          color: cell.pieza.color,
+          tipo: cell.pieza.tipo,
+
+          hasMoved: cell.pieza.hasMoved,
+        };
+      }),
+
+      esTurnoNegro: this.esTurnoNegro,
+      isGameOver: this.isGameOver,
+      enPassantTargetIndex:
+        this.enPassantTarget
+          ? this.playground.indexOf(
+            this.enPassantTarget
+          )
+          : null,
+    };
+  }
+
+  private restoreSnapshot(
+    snapshot: BoardSnapshot
+  ): void {
+    this.enPassantTarget =
+      snapshot.enPassantTargetIndex !== null
+        ? this.playground[
+        snapshot.enPassantTargetIndex
+        ]
+        : null;
+
+    this.playground.forEach(
+      (cell, index) => {
+        const pieceData =
+          snapshot.pieces[index];
+
+        if (!pieceData) {
+          cell.pieza = null;
+          cell.isTrajectory = false;
+
+          return;
+        }
+
+        const pieza = new Pieza(
+          pieceData.color,
+          pieceData.tipo
+        );
+
+        pieza.hasMoved =
+          pieceData.hasMoved;
+
+        cell.pieza = pieza;
+
+        cell.isTrajectory = false;
+      }
+    );
+
+    this.esTurnoNegro =
+      snapshot.esTurnoNegro;
+
+    this.isGameOver =
+      snapshot.isGameOver;
+  }
+
+
+  resign(color: boolean): void {
+    if (this.isGameOver) return;
+
+    this.isGameOver = true;
+
+    const loser =
+      color ? "Negras" : "Blancas";
+
+    const winner =
+      color ? "Blancas" : "Negras";
+
+    logger.log(
+      `${loser} se rinden. ${winner} ganan.`
+    );
+  }
+
+  undoMove(): boolean {
+    const snapshot = this.history.pop();
+
+    if (!snapshot) {
+      return false;
+    }
+
+    this.restoreSnapshot(snapshot);
+
+    logger.log("Movimiento regresado.");
+
+    return true;
   }
 
   isCheck(color: boolean = this.esTurnoNegro): boolean {
@@ -279,42 +438,229 @@ export class Board {
 
     return !kingIsStillInCheck;
   }
-  movePiece(origin: Cell, destination: Cell): boolean {
+
+  private getCell(
+    letra: string,
+    numero: number
+  ): Cell | undefined {
+    return this.playground.find(
+      (cell) =>
+        cell.letra === letra &&
+        cell.numero === numero
+    );
+  }
+  private getCastleMoves(
+    king: Pieza
+  ): Cell[] {
+    if (king.tipo !== "k") return [];
+
+    if (king.hasMoved) return [];
+
+    if (this.isCheck(king.color)) {
+      return [];
+    }
+
+    const rank =
+      king.color ? 8 : 1;
+
+    const origin =
+      this.getCell("E", rank);
+
+    if (origin?.pieza !== king) {
+      return [];
+    }
+
+    const moves: Cell[] = [];
+
+    // ENROQUE CORTO
+
+    const rookH =
+      this.getCell("H", rank);
+
+    const f =
+      this.getCell("F", rank);
+
+    const g =
+      this.getCell("G", rank);
+
+    if (
+      rookH?.pieza?.tipo === "r" &&
+      rookH.pieza.color === king.color &&
+      !rookH.pieza.hasMoved &&
+      f &&
+      g &&
+      !f.isOccupied &&
+      !g.isOccupied &&
+      this.isLegalMove(king, f) &&
+      this.isLegalMove(king, g)
+    ) {
+      moves.push(g);
+    }
+
+    // ENROQUE LARGO
+
+    const rookA =
+      this.getCell("A", rank);
+
+    const b =
+      this.getCell("B", rank);
+
+    const c =
+      this.getCell("C", rank);
+
+    const d =
+      this.getCell("D", rank);
+
+    if (
+      rookA?.pieza?.tipo === "r" &&
+      rookA.pieza.color === king.color &&
+      !rookA.pieza.hasMoved &&
+      b &&
+      c &&
+      d &&
+      !b.isOccupied &&
+      !c.isOccupied &&
+      !d.isOccupied &&
+      this.isLegalMove(king, d) &&
+      this.isLegalMove(king, c)
+    ) {
+      moves.push(c);
+    }
+
+    return moves;
+  }
+  getLegalMoves(
+    pieza: Pieza
+  ): Cell[] {
+    const moves =
+      pieza
+        .calcularTrayectoria(this)
+        .filter((destination) =>
+          this.isLegalMove(
+            pieza,
+            destination
+          )
+        );
+
+    if (pieza.tipo === "k") {
+      moves.push(
+        ...this.getCastleMoves(pieza)
+      );
+    }
+
+    return moves;
+  }
+
+  private executeCastle(
+    origin: Cell,
+    destination: Cell,
+    king: Pieza
+  ): void {
+    const isKingSide =
+      destination.letra === "G";
+
+    const rookOrigin =
+      this.getCell(
+        isKingSide ? "H" : "A",
+        origin.numero
+      );
+
+    const rookDestination =
+      this.getCell(
+        isKingSide ? "F" : "D",
+        origin.numero
+      );
+
+    if (
+      !rookOrigin?.pieza ||
+      !rookDestination
+    ) {
+      return;
+    }
+
+    const rook = rookOrigin.pieza;
+
+    destination.pieza = king;
+    origin.pieza = null;
+
+    rookDestination.pieza = rook;
+    rookOrigin.pieza = null;
+
+    king.hasMoved = true;
+    rook.hasMoved = true;
+  }
+
+  movePiece(
+    origin: Cell,
+    destination: Cell
+  ): boolean {
     if (this.isGameOver) {
       return false;
     }
-    if (!origin.pieza) return false;
 
-    // El condicional de reglas irá aquí.
-    if (origin.pieza.color !== this.esTurnoNegro) return false;
-    const movingPiece = origin.pieza;
-    if (movingPiece.color !== this.esTurnoNegro) {
+    if (!origin.pieza) {
       return false;
     }
 
-    const validMoves = movingPiece.calcularTrayectoria(this);
-    const isMoveLegal = validMoves.includes(destination);
-    if (!isMoveLegal) {
+    const movingPiece =
+      origin.pieza;
+
+    if (
+      movingPiece.color !==
+      this.esTurnoNegro
+    ) {
       return false;
     }
 
-    // Ejecución unificada de movimiento/captura
-    const capturedPiece = destination.pieza;
+    const validMoves =
+      this.getLegalMoves(movingPiece);
 
-    destination.pieza = movingPiece;
-    origin.pieza = null;
-
-    const leavesKingInCheck = this.isCheck(movingPiece.color);
-    if (leavesKingInCheck) {
-      origin.pieza = movingPiece;
-      destination.pieza = capturedPiece;
+    if (
+      !validMoves.includes(destination)
+    ) {
       return false;
     }
 
-    this.esTurnoNegro = !this.esTurnoNegro;
+    const snapshot =
+      this.createSnapshot();
+
+    const fileDistance =
+      Math.abs(
+        destination.letra.charCodeAt(0) -
+        origin.letra.charCodeAt(0)
+      );
+
+    const isCastle =
+      movingPiece.tipo === "k" &&
+      fileDistance === 2;
+
+    if (isCastle) {
+      this.executeCastle(
+        origin,
+        destination,
+        movingPiece
+      );
+    } else {
+      destination.pieza =
+        movingPiece;
+
+      origin.pieza = null;
+
+      movingPiece.hasMoved = true;
+    }
+
+    movingPiece.coronar(destination);
+
+    this.history.push(snapshot);
+
+    this.esTurnoNegro =
+      !this.esTurnoNegro;
+
     this.checkGameOver();
-    return true; // Movimiento exitoso
+
+    return true;
   }
+
 
   hasLegalMoves(color: boolean): boolean {
     return this.playground.some((cell) => {
@@ -376,26 +722,45 @@ export class Board {
   }
 
   loadPosition(position: string) {
-    const placement = position.split(" ")[0];
+
+    const [
+      placement,
+      turn
+    ] = position.trim().split(" ");
+
+    this.playground.forEach((cell) => {
+      cell.pieza = null;
+      cell.isTrajectory = false;
+    });
+
     let cellIndex = 0;
+
     for (const symbol of placement) {
       if (symbol === "/") {
         continue;
       }
+
       if (!isNaN(Number(symbol))) {
         cellIndex += Number(symbol);
         continue;
       }
 
-      const color = symbol === symbol.toLowerCase();
-      const tipo = symbol.toLowerCase() as Piece;
+      const color =
+        symbol === symbol.toLowerCase();
 
-      this.playground[cellIndex].pieza = new Pieza(color, tipo);
+      const tipo =
+        symbol.toLowerCase() as Piece;
+
+      this.playground[cellIndex].pieza =
+        new Pieza(color, tipo);
 
       cellIndex++;
-
-
     }
+
+    this.esTurnoNegro = turn === "b";
+    this.isGameOver = false;
+
+
   }
 }
 

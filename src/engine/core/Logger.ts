@@ -24,6 +24,10 @@ class BattleLogger {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
   }
+  clear(): void {
+    this.logs = [];
+    this.notifyListeners();
+  }
   private notifyListeners(): void {
     const currentLogs = [...this.logs];
     this.listeners.forEach(listener => listener(currentLogs));

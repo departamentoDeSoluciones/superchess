@@ -1,76 +1,138 @@
-# React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Super Chess
 
-Currently, two official plugins are available:
+Juego sencillo de ajedrez desarrollado con **React y TypeScript**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+El proyecto implementa la lógica principal de una partida de ajedrez, incluyendo movimientos legales, capturas, turnos, jaques, jaque mate y movimientos especiales.
 
-## React Compiler
+## Tecnologías
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* React
+* TypeScript
+* Vite
+* CSS
 
-## Expanding the ESLint configuration
+## Funcionalidades
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* Movimiento de todas las piezas
+* Validación de movimientos legales
+* Sistema de turnos para blancas y negras
+* Capturas
+* Detección de jaque
+* Detección de jaque mate
+* Detección de tablas por ahogado
+* Enroque corto y largo
+* Coronación automática del peón a reina
+* Opción para rendirse
+* Opción para regresar el último movimiento
+* Reinicio de la partida
+* Carga de posiciones mediante FEN
+* Historial de movimientos usando notación algebraica
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Ejemplos de movimientos registrados:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```txt
+1. e4 e5
+2. Nf3 Nc6
+3. Bc4 Nf6
+4. O-O
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+También soporta capturas, jaques, mates y promoción:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```txt
+Qxc5
+Qh5+
+Qh7#
+e8=Q
 ```
-# superchess
+
+## Estado del proyecto
+
+El juego se encuentra funcional para partidas locales.
+
+Actualmente falta completar la ejecución de la captura **en passant**. La detección de la casilla objetivo ya forma parte del motor, pero todavía falta eliminar correctamente el peón capturado durante el movimiento.
+
+## Instalación
+
+Clona el repositorio:
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+```
+
+Entra al proyecto:
+
+```bash
+cd super-chess
+```
+
+Instala las dependencias:
+
+```bash
+npm install
+```
+
+Inicia el servidor de desarrollo:
+
+```bash
+npm run dev
+```
+
+## Scripts
+
+```bash
+npm run dev
+```
+
+Inicia el proyecto en modo desarrollo.
+
+```bash
+npm run build
+```
+
+Genera la versión de producción.
+
+```bash
+npm run preview
+```
+
+Ejecuta localmente la versión de producción.
+
+## Estructura general
+
+```txt
+src/
+├── components/
+├── engine/
+│   ├── core/
+│   └── models/
+├── hooks/
+└── App.tsx
+```
+
+La lógica del ajedrez se encuentra separada de la interfaz para mantener el motor independiente de React.
+
+El tablero administra:
+
+* Estado de las casillas
+* Turnos
+* Historial
+* Jaques y mates
+* Movimientos especiales
+* Carga de posiciones
+
+React se encarga de:
+
+* Renderizar el tablero
+* Seleccionar piezas
+* Mostrar movimientos disponibles
+* Actualizar la interfaz
+* Mostrar el historial de la partida
+
+## Pendiente
+
+* Completar captura en passant
+* Agregar selección de pieza durante la coronación
+* Mejorar la reconstrucción del historial al regresar movimientos
+* Agregar pruebas para las reglas del motor
