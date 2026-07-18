@@ -358,6 +358,86 @@ export class Board {
   }
 
 
+  toFen(): string {
+    let fen = "";
+    let cellIndex = 0;
+
+    // 1. Posición de las piezas
+    for (let y = 8; y >= 1; y--) {
+      let emptyCount = 0;
+      for (let x = 0; x < 8; x++) {
+        const cell = this.playground[cellIndex];
+
+        if (cell.pieza) {
+          if (emptyCount > 0) {
+            fen += emptyCount;
+            emptyCount = 0;
+          }
+          const p = cell.pieza;
+          fen += p.color ? p.tipo.toLowerCase() : p.tipo.toUpperCase();
+        } else {
+          emptyCount++;
+        }
+
+        cellIndex++;
+      }
+
+      if (emptyCount > 0) {
+        fen += emptyCount;
+      }
+
+      if (y > 1) {
+        fen += "/";
+      }
+    }
+
+    // 2. Color activo
+    const activeColor = this.esTurnoNegro ? "b" : "w";
+
+    // 3. Disponibilidad de Enroque
+    let castling = "";
+
+    const checkCastle = (
+      kLetra: string,
+      kNum: number,
+      rLetra: string,
+      rNum: number,
+      color: boolean,
+      symbol: string
+    ) => {
+      // Usamos corchetes para saltarnos el TS compiler limit si getCell es private
+      const king = this['getCell'](kLetra, kNum)?.pieza;
+      const rook = this['getCell'](rLetra, rNum)?.pieza;
+
+      if (
+        king?.tipo === 'k' && king.color === color && !king.hasMoved &&
+        rook?.tipo === 'r' && rook.color === color && !rook.hasMoved
+      ) {
+        castling += symbol;
+      }
+    };
+
+    checkCastle("E", 1, "H", 1, false, "K");
+    checkCastle("E", 1, "A", 1, false, "Q");
+    checkCastle("E", 8, "H", 8, true, "k");
+    checkCastle("E", 8, "A", 8, true, "q");
+
+    if (castling === "") castling = "-";
+
+    // 4. Captura al paso (En Passant target)
+    const enPassant = this.enPassantTarget
+      ? `${this.enPassantTarget.letra.toLowerCase()}${this.enPassantTarget.numero}`
+      : "-";
+
+    // 5. Medios movimientos (Halfmove clock) - Fijo en 0 para MVP
+    const halfMove = "0";
+
+    // 6. Movimientos completos
+    const fullMove = Math.floor(this.history.length / 2) + 1;
+
+    return `${fen} ${activeColor} ${castling} ${enPassant} ${halfMove} ${fullMove}`;
+  }
+
   resign(color: boolean): void {
     if (this.isGameOver) return;
 
@@ -439,7 +519,7 @@ export class Board {
     return !kingIsStillInCheck;
   }
 
-  private getCell(
+  public getCell(
     letra: string,
     numero: number
   ): Cell | undefined {
